@@ -1,20 +1,30 @@
+import { fetchForecast } from "./api/forecast.js";
+import { searchPlaces } from "./api/geocoding.js";
+import {
+  state,
+  setData,
+  setLocation,
+  setSelectedDay,
+  setUi,
+  setUnits,
+} from "./state.js";
+import { getDom } from "./ui/dom.js";
+import {
+  renderCurrent,
+  renderDaily,
+  renderDayMenu,
+  renderHourly,
+  renderMetrics,
+  renderSuggestions,
+} from "./ui/render.js";
+
 const $ = (selector, root = document) => root.querySelector(selector);
 
-const state = {
-  system: "metric",
-  temperature: "c",
-  wind: "kmh",
-  precip: "mm",
-  day: "Tuesday",
-};
-
-const suggestionsSource = [
-  "Berlin, Germany",
-  "New York, United States",
-  "London, United Kingdom",
-  "Tokyo, Japan",
-  "Sydney, Australia",
-];
+let placesController = null;
+let forecastController = null;
+let debounceId = null;
+let places = [];
+let selectedPlaceId = null;
 
 const closeAllMenus = () => {
   document.querySelectorAll("[data-menu]").forEach((menu) => {
@@ -40,36 +50,14 @@ const toggleMenu = (name) => {
   }
 };
 
-const setSystem = (system) => {
-  state.system = system;
-
-  if (system === "imperial") {
-    state.temperature = "f";
-    state.wind = "mph";
-    state.precip = "in";
-  } else {
-    state.temperature = "c";
-    state.wind = "kmh";
-    state.precip = "mm";
-  }
-
-  const action = $(".menu--units [data-action='toggleSystem']");
-  if (action)
-    action.textContent =
-      system === "imperial" ? "Switch to Metric" : "Switch to Imperial";
-
-  updateUnitsUI();
-  updateDummyValues();
-};
-
-const updateUnitsUI = () => {
-  const unitsMenu = $(".menu--units");
+const updateUnitsUI = (dom) => {
+  const unitsMenu = dom.unitsMenu;
   if (!unitsMenu) return;
 
   const groupMap = {
-    temperature: state.temperature,
-    wind: state.wind,
-    precip: state.precip,
+    temperature: state.units.temperature,
+    wind: state.units.wind,
+    precip: state.units.precip,
   };
 
   unitsMenu.querySelectorAll("[data-group]").forEach((button) => {
@@ -81,158 +69,267 @@ const updateUnitsUI = () => {
   });
 
   const inferredSystem =
-    state.temperature === "f" && state.wind === "mph" && state.precip === "in"
+    state.units.temperature === "f" &&
+    state.units.wind === "mph" &&
+    state.units.precip === "in"
       ? "imperial"
       : "metric";
-  state.system = inferredSystem;
+  if (inferredSystem !== state.units.system)
+    setUnits({ system: inferredSystem });
 
   const action = unitsMenu.querySelector("[data-action='toggleSystem']");
-  if (action)
+  if (action) {
     action.textContent =
       inferredSystem === "imperial" ? "Switch to Metric" : "Switch to Imperial";
+  }
 };
 
-const updateDayUI = () => {
-  const label = $(".daySelect__label");
-  if (label) label.textContent = state.day;
-
-  const menu = $(".menu--days");
-  if (!menu) return;
-  menu.querySelectorAll("[data-day]").forEach((button) => {
-    const day = button.getAttribute("data-day");
-    const isSelected = day === state.day;
-    button.classList.toggle("is-selected", isSelected);
-    const existingCheck = button.querySelector(".menu__check");
-    if (isSelected && !existingCheck) {
-      const check = document.createElement("img");
-      check.className = "menu__check";
-      check.src = "./assets/images/icon-checkmark.svg";
-      check.alt = "";
-      check.width = 14;
-      check.height = 14;
-      button.append(check);
-    }
-    if (!isSelected && existingCheck) existingCheck.remove();
-  });
+const hideSuggestions = (dom) => {
+  if (!dom.suggestionsBox || !dom.searchInput) return;
+  dom.suggestionsBox.hidden = true;
+  dom.searchInput.setAttribute("aria-expanded", "false");
 };
 
-const updateDummyValues = () => {
-  const isImperial = state.temperature === "f";
-  const temp = $(".today__tempValue");
-  const feels = document.querySelectorAll(".metric__value")[0];
-  const wind = document.querySelectorAll(".metric__value")[2];
-  const precip = document.querySelectorAll(".metric__value")[3];
+const schedulePlacesSearch = (dom) => {
+  selectedPlaceId = null;
+  const query = String(dom.searchInput?.value ?? "").trim();
 
-  if (temp) temp.textContent = isImperial ? "68" : "20";
-  if (feels) feels.textContent = isImperial ? "64°" : "18°";
-  if (wind) wind.textContent = state.wind === "mph" ? "9 mph" : "14 km/h";
-  if (precip) precip.textContent = state.precip === "in" ? "0 in" : "0 mm";
-};
-
-const renderSuggestions = (items) => {
-  const box = $("#search-suggestions");
-  const input = $(".search__input");
-  if (!box || !input) return;
-
-  box.textContent = "";
-  if (items.length === 0) {
-    box.hidden = true;
-    input.setAttribute("aria-expanded", "false");
+  if (!query) {
+    placesController?.abort();
+    places = [];
+    renderSuggestions(dom, []);
     return;
   }
 
-  items.forEach((text) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "suggestions__item";
-    button.setAttribute("role", "option");
-    button.textContent = text;
-    button.addEventListener("mousedown", (event) => event.preventDefault());
-    button.addEventListener("click", () => {
-      input.value = text;
-      box.hidden = true;
-      input.setAttribute("aria-expanded", "false");
-      input.focus();
-    });
-    box.append(button);
+  if (debounceId) window.clearTimeout(debounceId);
+  debounceId = window.setTimeout(async () => {
+    placesController?.abort();
+    placesController = new AbortController();
+    try {
+      const nextPlaces = await searchPlaces(query, {
+        signal: placesController.signal,
+        limit: 6,
+        language: "en",
+      });
+      places = nextPlaces;
+      renderSuggestions(dom, places);
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      places = [];
+      renderSuggestions(dom, []);
+    }
+  }, 200);
+};
+
+const getSelectedPlace = (inputValue) => {
+  const direct = places.find((p) => String(p.id) === String(selectedPlaceId));
+  if (direct) return direct;
+
+  const query = String(inputValue ?? "")
+    .trim()
+    .toLowerCase();
+  if (!query) return places[0] || null;
+
+  return (
+    places.find((p) => String(p.label).toLowerCase() === query) ||
+    places.find((p) => String(p.label).toLowerCase().includes(query)) ||
+    places[0] ||
+    null
+  );
+};
+
+const loadForecast = async (dom, place) => {
+  if (!place) return;
+
+  forecastController?.abort();
+  forecastController = new AbortController();
+  setUi({ status: "loading", message: "" });
+
+  const forecast = await fetchForecast(
+    {
+      latitude: place.latitude,
+      longitude: place.longitude,
+      timezone: place.timezone || "auto",
+      units: state.units,
+      forecastDays: 7,
+    },
+    { signal: forecastController.signal },
+  );
+
+  const timezone = forecast?.timezone || place.timezone || "auto";
+  const dailyDays = Array.isArray(forecast?.daily?.time)
+    ? forecast.daily.time.slice(0, 7)
+    : [];
+  const defaultDay = dailyDays[0] || null;
+  const nextSelectedDay =
+    state.selectedDay && dailyDays.includes(state.selectedDay)
+      ? state.selectedDay
+      : defaultDay;
+
+  setLocation({
+    id: place.id,
+    label: place.label,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    timezone,
+  });
+  setData(forecast);
+  setSelectedDay(nextSelectedDay);
+  setUi({ status: "ready", message: "" });
+
+  renderDayMenu(dom, {
+    timezone,
+    days: dailyDays,
+    selectedDay: nextSelectedDay,
   });
 
-  box.hidden = false;
-  input.setAttribute("aria-expanded", "true");
+  const todayIso =
+    (Array.isArray(forecast?.daily?.time) && forecast.daily.time[0]) ||
+    String(forecast?.current?.time || "").slice(0, 10) ||
+    nextSelectedDay ||
+    "1970-01-01";
+
+  renderCurrent(dom, {
+    placeLabel: place.label,
+    dateIso: todayIso,
+    timezone,
+    current: forecast?.current,
+  });
+
+  renderMetrics(dom, {
+    units: state.units,
+    current: forecast?.current,
+  });
+
+  renderDaily(dom, {
+    timezone,
+    daily: forecast?.daily,
+  });
+
+  renderHourly(dom, {
+    timezone,
+    hourly: forecast?.hourly,
+    selectedDay: nextSelectedDay,
+  });
 };
 
 const init = () => {
-  const unitsButton = $("[data-menu-button='units']");
-  const dayButton = $("[data-menu-button='days']");
-  const unitsMenu = $(".menu--units");
-  const daysMenu = $(".menu--days");
-  const searchForm = $(".search");
-  const searchInput = $(".search__input");
-  const suggestionsBox = $("#search-suggestions");
+  const dom = getDom();
+  updateUnitsUI(dom);
 
-  updateUnitsUI();
-  updateDayUI();
-  updateDummyValues();
+  dom.unitsButton?.addEventListener("click", () => toggleMenu("units"));
+  dom.daysButton?.addEventListener("click", () => toggleMenu("days"));
 
-  unitsButton?.addEventListener("click", () => toggleMenu("units"));
-  dayButton?.addEventListener("click", () => toggleMenu("days"));
-
-  unitsMenu?.addEventListener("click", (event) => {
+  dom.unitsMenu?.addEventListener("click", async (event) => {
     const target =
       event.target instanceof Element ? event.target.closest("button") : null;
     if (!target) return;
 
     const action = target.getAttribute("data-action");
     if (action === "toggleSystem") {
-      setSystem(state.system === "imperial" ? "metric" : "imperial");
+      const nextSystem =
+        state.units.system === "imperial" ? "metric" : "imperial";
+      if (nextSystem === "imperial") {
+        setUnits({
+          system: "imperial",
+          temperature: "f",
+          wind: "mph",
+          precip: "in",
+        });
+      } else {
+        setUnits({
+          system: "metric",
+          temperature: "c",
+          wind: "kmh",
+          precip: "mm",
+        });
+      }
+      updateUnitsUI(dom);
+      if (state.location) {
+        try {
+          await loadForecast(dom, state.location);
+        } catch (error) {
+          if (error?.name === "AbortError") return;
+          setUi({ status: "error", message: "" });
+        }
+      }
       return;
     }
 
     const group = target.getAttribute("data-group");
     const value = target.getAttribute("data-value");
     if (!group || !value) return;
-    state[group] = value;
-    updateUnitsUI();
-    updateDummyValues();
+
+    setUnits({ [group]: value });
+    updateUnitsUI(dom);
+
+    if (state.location) {
+      try {
+        await loadForecast(dom, state.location);
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+        setUi({ status: "error", message: "" });
+      }
+    }
   });
 
-  daysMenu?.addEventListener("click", (event) => {
+  dom.daysMenu?.addEventListener("click", (event) => {
     const target =
       event.target instanceof Element ? event.target.closest("button") : null;
     if (!target) return;
     const day = target.getAttribute("data-day");
     if (!day) return;
-    state.day = day;
-    updateDayUI();
+
+    setSelectedDay(day);
+    if (state.data && state.location) {
+      const days = Array.isArray(state.data?.daily?.time)
+        ? state.data.daily.time.slice(0, 7)
+        : [];
+      renderDayMenu(dom, {
+        timezone: state.location.timezone,
+        days,
+        selectedDay: state.selectedDay,
+      });
+      renderHourly(dom, {
+        timezone: state.location.timezone,
+        hourly: state.data.hourly,
+        selectedDay: state.selectedDay,
+      });
+    }
     closeAllMenus();
   });
 
-  searchForm?.addEventListener("submit", (event) => {
+  dom.searchForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     closeAllMenus();
-    suggestionsBox.hidden = true;
-    searchInput.setAttribute("aria-expanded", "false");
-  });
+    hideSuggestions(dom);
 
-  searchInput?.addEventListener("input", () => {
-    const value = searchInput.value.trim().toLowerCase();
-    if (!value) {
-      renderSuggestions([]);
-      return;
+    const picked = getSelectedPlace(dom.searchInput?.value);
+    if (!picked) return;
+
+    try {
+      await loadForecast(dom, picked);
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+      setUi({ status: "error", message: "" });
     }
-    const matches = suggestionsSource
-      .filter((item) => item.toLowerCase().includes(value))
-      .slice(0, 6);
-    renderSuggestions(matches);
   });
 
-  searchInput?.addEventListener("focus", () => {
-    const value = searchInput.value.trim().toLowerCase();
-    if (!value) return;
-    const matches = suggestionsSource
-      .filter((item) => item.toLowerCase().includes(value))
-      .slice(0, 6);
-    renderSuggestions(matches);
+  dom.searchInput?.addEventListener("input", () => schedulePlacesSearch(dom));
+  dom.searchInput?.addEventListener("focus", () => schedulePlacesSearch(dom));
+
+  dom.suggestionsBox?.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const item = target ? target.closest(".suggestions__item") : null;
+    if (!item) return;
+    const id = item.dataset.placeId;
+    if (!id) return;
+    const picked = places.find((p) => String(p.id) === String(id));
+    if (!picked || !dom.searchInput) return;
+    selectedPlaceId = id;
+    dom.searchInput.value = picked.label;
+    hideSuggestions(dom);
+    dom.searchInput.focus();
   });
 
   document.addEventListener("click", (event) => {
@@ -245,26 +342,14 @@ const init = () => {
     const clickedSearchPanel = target.closest(".search__panel");
 
     if (!clickedMenuButton && !clickedMenu) closeAllMenus();
-    if (!clickedSuggestions && !clickedSearchPanel) {
-      const box = $("#search-suggestions");
-      const input = $(".search__input");
-      if (box && input) {
-        box.hidden = true;
-        input.setAttribute("aria-expanded", "false");
-      }
-    }
+    if (!clickedSuggestions && !clickedSearchPanel) hideSuggestions(dom);
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeAllMenus();
-    const box = $("#search-suggestions");
-    const input = $(".search__input");
-    if (box && input) {
-      box.hidden = true;
-      input.setAttribute("aria-expanded", "false");
-      input.blur();
-    }
+    hideSuggestions(dom);
+    dom.searchInput?.blur();
   });
 };
 
