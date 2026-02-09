@@ -6,6 +6,7 @@ import {
   formatWeekdayShort,
 } from "../utils/format.js";
 import { iconForWeatherCode } from "../utils/weatherCodes.js";
+import { precipUnitLabel, windUnitLabel } from "../utils/units.js";
 import {
   createDayMenuOption,
   createDayTile,
@@ -60,8 +61,8 @@ export const renderMetrics = (dom, { units, current }) => {
   const values = dom.metricsValues;
   if (!Array.isArray(values) || values.length < 4) return;
 
-  const windUnit = units?.wind === "mph" ? "mph" : "km/h";
-  const precipUnit = units?.precip === "in" ? "in" : "mm";
+  const windUnit = windUnitLabel(units);
+  const precipUnit = precipUnitLabel(units);
 
   values[0].textContent = `${formatNumber(current?.apparent_temperature, { maximumFractionDigits: 0 })}°`;
   values[1].textContent = `${formatNumber(current?.relative_humidity_2m, { maximumFractionDigits: 0 })}%`;

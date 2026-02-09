@@ -17,6 +17,11 @@ import {
   renderMetrics,
   renderSuggestions,
 } from "./ui/render.js";
+import {
+  applyUnitsPatch,
+  unitsActionLabel,
+  unitsForSystem,
+} from "./utils/units.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 
@@ -68,19 +73,13 @@ const updateUnitsUI = (dom) => {
     button.classList.toggle("is-selected", value === selectedValue);
   });
 
-  const inferredSystem =
-    state.units.temperature === "f" &&
-    state.units.wind === "mph" &&
-    state.units.precip === "in"
-      ? "imperial"
-      : "metric";
-  if (inferredSystem !== state.units.system)
-    setUnits({ system: inferredSystem });
+  const nextUnits = applyUnitsPatch(state.units, {});
+  if (nextUnits.system !== state.units.system)
+    setUnits({ system: nextUnits.system });
 
   const action = unitsMenu.querySelector("[data-action='toggleSystem']");
   if (action) {
-    action.textContent =
-      inferredSystem === "imperial" ? "Switch to Metric" : "Switch to Imperial";
+    action.textContent = unitsActionLabel(state.units);
   }
 };
 
@@ -229,21 +228,7 @@ const init = () => {
     if (action === "toggleSystem") {
       const nextSystem =
         state.units.system === "imperial" ? "metric" : "imperial";
-      if (nextSystem === "imperial") {
-        setUnits({
-          system: "imperial",
-          temperature: "f",
-          wind: "mph",
-          precip: "in",
-        });
-      } else {
-        setUnits({
-          system: "metric",
-          temperature: "c",
-          wind: "kmh",
-          precip: "mm",
-        });
-      }
+      setUnits(unitsForSystem(nextSystem));
       updateUnitsUI(dom);
       if (state.location) {
         try {
@@ -260,7 +245,8 @@ const init = () => {
     const value = target.getAttribute("data-value");
     if (!group || !value) return;
 
-    setUnits({ [group]: value });
+    const nextUnits = applyUnitsPatch(state.units, { [group]: value });
+    setUnits(nextUnits);
     updateUnitsUI(dom);
 
     if (state.location) {
