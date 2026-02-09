@@ -6,6 +6,8 @@ export const getDom = () => {
   );
 
   return {
+    page: $(".page"),
+    content: $(".content"),
     unitsButton: $("[data-menu-button='units']"),
     unitsMenu: $(".menu--units"),
     daysButton: $("[data-menu-button='days']"),
@@ -14,6 +16,9 @@ export const getDom = () => {
     searchForm: $(".search"),
     searchInput: $(".search__input"),
     suggestionsBox: $("#search-suggestions"),
+    searchStatus: $(".searchStatus"),
+    emptyState: $(".emptyState"),
+    grid: $(".grid"),
     todayPlace: $(".today__place"),
     todayDate: $(".today__date"),
     todayIcon: $(".today__icon"),

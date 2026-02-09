@@ -31,6 +31,17 @@ let debounceId = null;
 let places = [];
 let selectedPlaceId = null;
 
+const setPageUi = (dom, mode) => {
+  if (!dom.page) return;
+  const next = mode || "ready";
+  dom.page.dataset.ui = next;
+  if (dom.searchStatus) dom.searchStatus.hidden = next !== "loading";
+  if (dom.emptyState) dom.emptyState.hidden = next !== "empty";
+  if (dom.grid) dom.grid.hidden = next === "empty";
+  if (dom.content)
+    dom.content.setAttribute("aria-busy", String(next === "loading"));
+};
+
 const closeAllMenus = () => {
   document.querySelectorAll("[data-menu]").forEach((menu) => {
     menu.hidden = true;
@@ -93,6 +104,10 @@ const schedulePlacesSearch = (dom) => {
   selectedPlaceId = null;
   const query = String(dom.searchInput?.value ?? "").trim();
 
+  if (dom.page?.dataset.ui === "empty") {
+    setPageUi(dom, state.data ? "ready" : "ready");
+  }
+
   if (!query) {
     placesController?.abort();
     places = [];
@@ -143,6 +158,7 @@ const loadForecast = async (dom, place) => {
   forecastController?.abort();
   forecastController = new AbortController();
   setUi({ status: "loading", message: "" });
+  setPageUi(dom, "loading");
 
   const forecast = await fetchForecast(
     {
@@ -175,6 +191,7 @@ const loadForecast = async (dom, place) => {
   setData(forecast);
   setSelectedDay(nextSelectedDay);
   setUi({ status: "ready", message: "" });
+  setPageUi(dom, "ready");
 
   renderDayMenu(dom, {
     timezone,
@@ -290,14 +307,37 @@ const init = () => {
     closeAllMenus();
     hideSuggestions(dom);
 
-    const picked = getSelectedPlace(dom.searchInput?.value);
-    if (!picked) return;
+    const query = String(dom.searchInput?.value ?? "").trim();
+    let picked = getSelectedPlace(query);
+
+    if (!picked && query) {
+      try {
+        placesController?.abort();
+        placesController = new AbortController();
+        const results = await searchPlaces(query, {
+          signal: placesController.signal,
+          limit: 6,
+          language: "en",
+        });
+        places = results;
+        picked = results[0] || null;
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+      }
+    }
+
+    if (!picked) {
+      setUi({ status: "ready", message: "" });
+      setPageUi(dom, "empty");
+      return;
+    }
 
     try {
       await loadForecast(dom, picked);
     } catch (error) {
       if (error?.name === "AbortError") return;
       setUi({ status: "error", message: "" });
+      setPageUi(dom, state.data ? "ready" : "ready");
     }
   });
 

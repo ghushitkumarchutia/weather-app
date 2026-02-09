@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="./src/styles/main.css" />
   </head>
   <body>
-    <div class="page">
+    <div class="page" data-ui="ready">
       <header class="topbar" aria-label="Weather Now">
         <div class="topbar__inner">
           <a class="brand" href="/" aria-label="Weather Now home">
@@ -207,6 +207,14 @@
           </div>
           <button class="search__button" type="submit">Search</button>
         </form>
+
+        <p class="searchStatus" role="status" aria-live="polite" hidden>
+          Search in progress
+        </p>
+
+        <section class="emptyState" aria-label="No results" hidden>
+          <p class="emptyState__text">No search result found!</p>
+        </section>
 
         <section class="grid" aria-label="Weather overview">
           <div class="left">

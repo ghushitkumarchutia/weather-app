@@ -188,6 +188,41 @@ img {
   max-width: 720px;
 }
 
+.searchStatus {
+  margin: 12px auto 0;
+  max-width: 720px;
+  width: fit-content;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid hsla(0, 0%, 100%, 0.12);
+  background: hsla(243, 23%, 24%, 0.52);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  box-shadow: var(--shadow-2);
+}
+
+.emptyState {
+  margin: 44px auto 0;
+  max-width: 720px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--stroke);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-1);
+  padding: 44px 22px;
+  text-align: center;
+}
+
+.emptyState__text {
+  margin: 0;
+  font-family: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.2px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
 .search__panel {
   flex: 1;
   min-width: 260px;
@@ -299,6 +334,86 @@ img {
   grid-template-columns: 1fr 360px;
   gap: 26px;
   align-items: start;
+}
+
+.page[data-ui="empty"] .grid {
+  display: none;
+}
+
+.page[data-ui="empty"] .emptyState {
+  display: block;
+}
+
+.page[data-ui="empty"] .searchStatus {
+  display: none;
+}
+
+.page[data-ui="loading"] .searchStatus {
+  display: block;
+}
+
+.page[data-ui="ready"] .searchStatus {
+  display: none;
+}
+
+.page[data-ui="ready"] .emptyState {
+  display: none;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.page[data-ui="loading"] .today,
+.page[data-ui="loading"] .metric,
+.page[data-ui="loading"] .day,
+.page[data-ui="loading"] .hourly,
+.page[data-ui="loading"] .hour {
+  position: relative;
+  overflow: hidden;
+}
+
+.page[data-ui="loading"] .today::after,
+.page[data-ui="loading"] .metric::after,
+.page[data-ui="loading"] .day::after,
+.page[data-ui="loading"] .hourly::after,
+.page[data-ui="loading"] .hour::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.16),
+    rgba(255, 255, 255, 0)
+  );
+  transform: translateX(-120%);
+  animation: shimmer 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.page[data-ui="loading"] .today__place,
+.page[data-ui="loading"] .today__date,
+.page[data-ui="loading"] .today__temp,
+.page[data-ui="loading"] .metric__label,
+.page[data-ui="loading"] .metric__value,
+.page[data-ui="loading"] .day__name,
+.page[data-ui="loading"] .day__temps,
+.page[data-ui="loading"] .hourly__title,
+.page[data-ui="loading"] .hour__time,
+.page[data-ui="loading"] .hour__temp {
+  color: transparent;
+}
+
+.page[data-ui="loading"] .today__icon,
+.page[data-ui="loading"] .day__icon,
+.page[data-ui="loading"] .hour__icon {
+  opacity: 0;
 }
 
 .today {
