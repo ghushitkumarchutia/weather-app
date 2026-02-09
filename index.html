@@ -17,15 +17,338 @@
     <link rel="stylesheet" href="./src/styles/main.css" />
   </head>
   <body>
-    Units Switch to Imperial/Metric Temperature Celsius (°C) Fahrenheit (°F)
-    Wind Speed km/h mph Precipitation Millimeters (mm) Inches (in) How's the sky
-    looking today? Search for a city, e.g., New York Search Feels like Humidity
-    Wind Precipitation Daily forecast Hourly forecast
+    <div class="page">
+      <header class="topbar" aria-label="Weather Now">
+        <div class="topbar__inner">
+          <a class="brand" href="/" aria-label="Weather Now home">
+            <img
+              class="brand__logo"
+              src="./assets/images/logo.svg"
+              alt=""
+              width="28"
+              height="28"
+            />
+            <span class="brand__name">Weather Now</span>
+          </a>
 
-    <div class="attribution">
-      Challenge by
-      <a href="https://www.frontendmentor.io?ref=challenge">Frontend Mentor</a>.
-      Coded by <a href="#">Your Name Here</a>.
+          <button
+            class="units"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <img
+              class="units__icon"
+              src="./assets/images/icon-units.svg"
+              alt=""
+              width="16"
+              height="16"
+            />
+            <span class="units__label">Units</span>
+            <img
+              class="units__chevron"
+              src="./assets/images/icon-dropdown.svg"
+              alt=""
+              width="12"
+              height="12"
+            />
+          </button>
+        </div>
+      </header>
+
+      <main class="content">
+        <h1 class="title">How's the sky looking today?</h1>
+
+        <form
+          class="search"
+          action="#"
+          method="get"
+          aria-label="Search location"
+        >
+          <div class="search__field">
+            <span class="search__icon" aria-hidden="true"></span>
+            <label class="sr-only" for="q">Search for a place</label>
+            <input
+              class="search__input"
+              id="q"
+              name="q"
+              type="search"
+              placeholder="Search for a place..."
+              autocomplete="off"
+            />
+          </div>
+          <button class="search__button" type="submit">Search</button>
+        </form>
+
+        <section class="grid" aria-label="Weather overview">
+          <div class="left">
+            <section class="today" aria-label="Current weather">
+              <div class="today__meta">
+                <h2 class="today__place">Berlin, Germany</h2>
+                <p class="today__date">Tuesday, Aug 5, 2025</p>
+              </div>
+
+              <div class="today__weather" aria-hidden="true">
+                <img
+                  class="today__icon"
+                  src="./assets/images/icon-sunny.webp"
+                  alt=""
+                  width="64"
+                  height="64"
+                />
+              </div>
+
+              <p class="today__temp">
+                <span class="today__tempValue">68</span
+                ><span class="today__tempUnit">°</span>
+              </p>
+            </section>
+
+            <section class="metrics" aria-label="Weather metrics">
+              <div class="metric">
+                <p class="metric__label">Feels Like</p>
+                <p class="metric__value">64°</p>
+              </div>
+              <div class="metric">
+                <p class="metric__label">Humidity</p>
+                <p class="metric__value">46%</p>
+              </div>
+              <div class="metric">
+                <p class="metric__label">Wind</p>
+                <p class="metric__value">9 mph</p>
+              </div>
+              <div class="metric">
+                <p class="metric__label">Precipitation</p>
+                <p class="metric__value">0 in</p>
+              </div>
+            </section>
+
+            <section class="daily" aria-label="Daily forecast">
+              <h2 class="sectionTitle">Daily forecast</h2>
+              <div class="daily__list" role="list">
+                <article class="day" role="listitem" aria-label="Tuesday">
+                  <p class="day__name">Tue</p>
+                  <img
+                    class="day__icon"
+                    src="./assets/images/icon-rain.webp"
+                    alt=""
+                    width="36"
+                    height="36"
+                  />
+                  <p class="day__temps">
+                    <span class="day__high">68°</span>
+                    <span class="day__low">57°</span>
+                  </p>
+                </article>
+                <article class="day" role="listitem" aria-label="Wednesday">
+                  <p class="day__name">Wed</p>
+                  <img
+                    class="day__icon"
+                    src="./assets/images/icon-drizzle.webp"
+                    alt=""
+                    width="36"
+                    height="36"
+                  />
+                  <p class="day__temps">
+                    <span class="day__high">70°</span>
+                    <span class="day__low">59°</span>
+                  </p>
+                </article>
+                <article class="day" role="listitem" aria-label="Thursday">
+                  <p class="day__name">Thu</p>
+                  <img
+                    class="day__icon"
+                    src="./assets/images/icon-sunny.webp"
+                    alt=""
+                    width="36"
+                    height="36"
+                  />
+                  <p class="day__temps">
+                    <span class="day__high">75°</span>
+                    <span class="day__low">57°</span>
+                  </p>
+                </article>
+                <article class="day" role="listitem" aria-label="Friday">
+                  <p class="day__name">Fri</p>
+                  <img
+                    class="day__icon"
+                    src="./assets/images/icon-partly-cloudy.webp"
+                    alt=""
+                    width="36"
+                    height="36"
+                  />
+                  <p class="day__temps">
+                    <span class="day__high">77°</span>
+                    <span class="day__low">55°</span>
+                  </p>
+                </article>
+                <article class="day" role="listitem" aria-label="Saturday">
+                  <p class="day__name">Sat</p>
+                  <img
+                    class="day__icon"
+                    src="./assets/images/icon-storm.webp"
+                    alt=""
+                    width="36"
+                    height="36"
+                  />
+                  <p class="day__temps">
+                    <span class="day__high">70°</span>
+                    <span class="day__low">59°</span>
+                  </p>
+                </article>
+                <article class="day" role="listitem" aria-label="Sunday">
+                  <p class="day__name">Sun</p>
+                  <img
+                    class="day__icon"
+                    src="./assets/images/icon-overcast.webp"
+                    alt=""
+                    width="36"
+                    height="36"
+                  />
+                  <p class="day__temps">
+                    <span class="day__high">77°</span>
+                    <span class="day__low">61°</span>
+                  </p>
+                </article>
+                <article class="day" role="listitem" aria-label="Monday">
+                  <p class="day__name">Mon</p>
+                  <img
+                    class="day__icon"
+                    src="./assets/images/icon-fog.webp"
+                    alt=""
+                    width="36"
+                    height="36"
+                  />
+                  <p class="day__temps">
+                    <span class="day__high">75°</span>
+                    <span class="day__low">59°</span>
+                  </p>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <aside class="hourly" aria-label="Hourly forecast">
+            <div class="hourly__head">
+              <h2 class="hourly__title">Hourly forecast</h2>
+              <button
+                class="daySelect"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+              >
+                <span class="daySelect__label">Tuesday</span>
+                <img
+                  class="daySelect__chevron"
+                  src="./assets/images/icon-dropdown.svg"
+                  alt=""
+                  width="12"
+                  height="12"
+                />
+              </button>
+            </div>
+
+            <div class="hourly__list" role="list">
+              <div class="hour" role="listitem">
+                <img
+                  class="hour__icon"
+                  src="./assets/images/icon-overcast.webp"
+                  alt=""
+                  width="22"
+                  height="22"
+                />
+                <p class="hour__time">3 PM</p>
+                <p class="hour__temp">68°</p>
+              </div>
+              <div class="hour" role="listitem">
+                <img
+                  class="hour__icon"
+                  src="./assets/images/icon-partly-cloudy.webp"
+                  alt=""
+                  width="22"
+                  height="22"
+                />
+                <p class="hour__time">4 PM</p>
+                <p class="hour__temp">68°</p>
+              </div>
+              <div class="hour" role="listitem">
+                <img
+                  class="hour__icon"
+                  src="./assets/images/icon-sunny.webp"
+                  alt=""
+                  width="22"
+                  height="22"
+                />
+                <p class="hour__time">5 PM</p>
+                <p class="hour__temp">68°</p>
+              </div>
+              <div class="hour" role="listitem">
+                <img
+                  class="hour__icon"
+                  src="./assets/images/icon-overcast.webp"
+                  alt=""
+                  width="22"
+                  height="22"
+                />
+                <p class="hour__time">6 PM</p>
+                <p class="hour__temp">66°</p>
+              </div>
+              <div class="hour" role="listitem">
+                <img
+                  class="hour__icon"
+                  src="./assets/images/icon-rain.webp"
+                  alt=""
+                  width="22"
+                  height="22"
+                />
+                <p class="hour__time">7 PM</p>
+                <p class="hour__temp">66°</p>
+              </div>
+              <div class="hour" role="listitem">
+                <img
+                  class="hour__icon"
+                  src="./assets/images/icon-fog.webp"
+                  alt=""
+                  width="22"
+                  height="22"
+                />
+                <p class="hour__time">8 PM</p>
+                <p class="hour__temp">64°</p>
+              </div>
+              <div class="hour" role="listitem">
+                <img
+                  class="hour__icon"
+                  src="./assets/images/icon-overcast.webp"
+                  alt=""
+                  width="22"
+                  height="22"
+                />
+                <p class="hour__time">9 PM</p>
+                <p class="hour__temp">63°</p>
+              </div>
+              <div class="hour" role="listitem">
+                <img
+                  class="hour__icon"
+                  src="./assets/images/icon-overcast.webp"
+                  alt=""
+                  width="22"
+                  height="22"
+                />
+                <p class="hour__time">10 PM</p>
+                <p class="hour__temp">63°</p>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <footer class="attribution">
+          Challenge by
+          <a href="https://www.frontendmentor.io?ref=challenge"
+            >Frontend Mentor</a
+          >
+          . Coded by <a href="#">Your Name Here</a>.
+        </footer>
+      </main>
     </div>
 
     <script type="module" src="./src/scripts/app.js"></script>
